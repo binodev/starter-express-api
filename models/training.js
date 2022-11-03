@@ -13,6 +13,8 @@ module.exports = {
       description: { type: String },
       cover: { type: String },
       attendants: [{ ref: 'Student' }],
+      price: { type: String },
+      isFree: { type: Boolean },
       contact: { type: String },
       author: { type: String },
       category: { ref: 'Category' }

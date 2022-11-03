@@ -222,11 +222,12 @@ module.exports = class ResourceController {
           let resource = JSON.parse(request.body.resource);
 
           request.files.forEach(file => {
+            let location = file.transforms && file.transforms[0] ? file.transforms[0].location : file.location;
             if (request.files.filter(f => f.fieldname == file.fieldname).length > 1) {
               resource[file.fieldname] = resource[file.fieldname] !== 'waiting-for-files' ? resource[file.fieldname] : [];
-              resource[file.fieldname].push(file.transforms[0].location);
+              resource[file.fieldname].push(location);
             } else {
-              resource[file.fieldname] = file.transforms[0].location;
+              resource[file.fieldname] = location;
             }
           });
 
@@ -342,14 +343,16 @@ module.exports = class ResourceController {
           // console.log(resource);
 
           request.files.forEach(file => {
+            let location = file.transforms && file.transforms[0] ? file.transforms[0].location : file.location;
+
             if (request.files.filter(f => f.fieldname == file.fieldname).length > 1) {
               resource[file.fieldname] = resource[file.fieldname] !== 'waiting-for-files' ? resource[file.fieldname] : [];
-              resource[file.fieldname].push(file.transforms[0].location);
+              resource[file.fieldname].push(location);
             } else {
               if (typeof resource[file.fieldname] == 'object') {
-                resource[file.fieldname].push(file.transforms[0].location);
+                resource[file.fieldname].push(location);
               } else {
-                resource[file.fieldname] = file.transforms[0].location;
+                resource[file.fieldname] = location;
               }
             }
           });
