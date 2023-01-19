@@ -3,7 +3,7 @@ const MainService = require('../services/resource');
 const FileHelper = require('../lib/file');
 
 module.exports = class ResourceController {
-  constructor (model, type, plural, references, auth, validate, notifier, extractor) {
+  constructor(model, type, plural, references, auth, validate, notifier, extractor) {
     this.type = type;
     this.plural = plural;
     this.validate = validate;
@@ -12,7 +12,7 @@ module.exports = class ResourceController {
     this.extractor = extractor;
   }
 
-  get () {
+  get() {
     return {
       description: 'Returns the ' + this.type + ' info',
       auth: this.auth.get || 'jwt',
@@ -22,56 +22,56 @@ module.exports = class ResourceController {
             [this.type]: await this.service.get(request.params.resource, request.query)
           }, 200);
         } catch (error) {
-          return h.response({error: error.message}, 500);
+          return h.response({ error: error.message }, 500);
         }
       },
       tags: ['api']
     };
   }
 
-  count () {
+  count() {
     return {
       description: 'Returns the count of ' + this.plural,
       auth: this.auth.count || 'jwt',
       handler: async (request, h) => {
-        try { 
+        try {
           if (request.query.createdAt) {
             request.query.createdAt = JSON.parse(request.query.createdAt);
           }
-        
+
           return h.response({
             [this.plural]: await this.service.count(request.query)
           }, 200);
         } catch (error) {
-          return h.response({error: error.message}, 500);
+          return h.response({ error: error.message }, 500);
         }
       },
       tags: ['api']
     };
-  } 
+  }
 
-  aggregate () {
+  aggregate() {
     return {
       description: 'Returns the aggregate of ' + this.plural,
       auth: this.auth.count || 'jwt',
       handler: async (request, h) => {
-        try { 
+        try {
           if (request.query.createdAt) {
             request.query.createdAt = JSON.parse(request.query.createdAt);
           }
-        
+
           return h.response({
             [this.plural]: await this.service.aggregate(request.query)
           }, 200);
         } catch (error) {
-          return h.response({error: error.message}, 500);
+          return h.response({ error: error.message }, 500);
         }
       },
       tags: ['api']
     };
-  } 
-  
-  list () {
+  }
+
+  list() {
     return {
       description: 'Returns the list of ' + this.total,
       auth: this.auth.list || 'jwt',
@@ -84,10 +84,10 @@ module.exports = class ResourceController {
           if (request.query.filter) {
             const filterData = JSON.parse(request.query.filter);
             if (filterData.text) {
-              filter = {$or: []};
+              filter = { $or: [] };
 
               filterData.type.forEach(type => {
-                filter['$or'].push({[type]: new RegExp(filterData.text, 'gi')});
+                filter['$or'].push({ [type]: new RegExp(filterData.text, 'gi') });
               });
             }
           }
@@ -95,7 +95,7 @@ module.exports = class ResourceController {
           if (request.query.sort) {
             let sortData = JSON.parse(request.query.sort);
             for (var p in sortData) {
-              if (sortData[p] !== 0) {     
+              if (sortData[p] !== 0) {
                 sort[p] = sortData[p];
               }
             }
@@ -108,9 +108,9 @@ module.exports = class ResourceController {
 
           const page = parseInt(request.query.page) || 0;
           const perPage = parseInt(request.query.perPage) || 1500;
-          
-          let resources = await this.service.list(params, page, perPage, sort, 
-            request.query.select || {}, request.query.noPopulate == 'yes', request.query.additionalPopulate || []);
+
+          let resources = await this.service.list(params, page, perPage, sort,
+            request.query.select || {}, request.query.noPopulate == 'no', request.query.additionalPopulate || []);
           let resourceCount = await this.service.count(params);
 
           return h.response({
@@ -119,14 +119,14 @@ module.exports = class ResourceController {
           }, 200);
         } catch (error) {
           console.log(error);
-          return h.response({error: error.message}, 500);
+          return h.response({ error: error.message }, 500);
         }
       },
       tags: ['api']
     };
-  } 
-  
-  extract () {
+  }
+
+  extract() {
     return {
       description: 'Returns the extract of ' + this.total,
       auth: this.auth.extract || 'jwt',
@@ -139,10 +139,10 @@ module.exports = class ResourceController {
           if (request.query.filter) {
             const filterData = JSON.parse(request.query.filter);
             if (filterData.text) {
-              filter = {$or: []};
+              filter = { $or: [] };
 
               filterData.type.forEach(type => {
-                filter['$or'].push({[type]: new RegExp(filterData.text, 'gi')});
+                filter['$or'].push({ [type]: new RegExp(filterData.text, 'gi') });
               });
             }
           }
@@ -150,7 +150,7 @@ module.exports = class ResourceController {
           if (request.query.sort) {
             let sortData = JSON.parse(request.query.sort);
             for (var p in sortData) {
-              if (sortData[p] !== 0) {     
+              if (sortData[p] !== 0) {
                 sort[p] = sortData[p];
               }
             }
@@ -163,7 +163,7 @@ module.exports = class ResourceController {
 
           const page = parseInt(request.query.page) || 0;
           const perPage = parseInt(request.query.perPage) || 1500000;
-          
+
           let resources = await this.service.list(params, page, perPage, sort);
 
           resources = this.extractor.parseData(request.query, resources);
@@ -175,14 +175,14 @@ module.exports = class ResourceController {
           }, 200);
         } catch (error) {
           console.log(error);
-          return h.response({error: error.message}, 500);
+          return h.response({ error: error.message }, 500);
         }
       },
       tags: ['api']
     };
-  } 
-  
-  create () {
+  }
+
+  create() {
     return {
       description: 'Create a new ' + this.type,
       auth: this.auth.create || 'jwt',
@@ -195,18 +195,18 @@ module.exports = class ResourceController {
       },
       handler: async (request, h) => {
         try {
-          let data = await this.service.create({...request.body, createdBy: request.headers.userId});
+          let data = await this.service.create({ ...request.body, createdBy: request.headers.userId });
           return h.response({ message: data.message, [this.type]: data.resource }, data.statusCode);
         } catch (error) {
           console.log(error);
-          return h.response({error: error.message}, 500);
+          return h.response({ error: error.message }, 500);
         }
       },
       tags: ['api']
     };
-  } 
-  
-  createWithFile () {
+  }
+
+  createWithFile() {
     return {
       description: 'Remove the ' + this.type,
       auth: this.auth.createWithFile || 'jwt',
@@ -232,17 +232,17 @@ module.exports = class ResourceController {
           });
 
           let data = await this.service.create(resource);
-    
+
           return h.response({ message: 'Done', [this.type]: data.resource }, 200);
         } catch (error) {
-          return h.response({error: error.message}, 500);
+          return h.response({ error: error.message }, 500);
         }
       },
       tags: ['api']
     };
   }
-  
-  createMany () {
+
+  createMany() {
     return {
       description: 'Create a list of ' + this.type,
       auth: this.auth.createMany || 'jwt',
@@ -258,14 +258,14 @@ module.exports = class ResourceController {
           let data = await this.service.createMany(request.body);
           return h.response({ message: data.message, resources: data.resources }, data.statusCode);
         } catch (error) {
-          return h.response({error: error.message}, 500);
+          return h.response({ error: error.message }, 500);
         }
       },
       tags: ['api']
     };
-  } 
-  
-  update () {
+  }
+
+  update() {
     return {
       description: 'Remove the ' + this.type,
       auth: this.auth.update || 'jwt',
@@ -284,17 +284,17 @@ module.exports = class ResourceController {
           resourceData.updatedBy = request.headers.userId;
 
           let data = await this.service.update(resourceId, resourceData);
-    
+
           return h.response({ message: 'Done', [this.type]: data.resource }, 200);
         } catch (error) {
-          return h.response({error: error.message}, 500);
+          return h.response({ error: error.message }, 500);
         }
       },
       tags: ['api']
     };
   }
-  
-  updateMany () {
+
+  updateMany() {
     return {
       description: 'Update many items of the ' + this.type,
       auth: this.auth.update || 'jwt',
@@ -314,17 +314,17 @@ module.exports = class ResourceController {
             let data = await this.service.update(resourceData[i].id, resourceData[i].data);
             datas.push(data.resource);
           }
-    
+
           return h.response({ message: 'Done', [this.plural]: datas }, 200);
         } catch (error) {
-          return h.response({error: error.message}, 500);
+          return h.response({ error: error.message }, 500);
         }
       },
       tags: ['api']
     };
   }
-  
-  updateWithFile () {
+
+  updateWithFile() {
     return {
       description: 'Remove the ' + this.type,
       auth: this.auth.updateWithFile || 'jwt',
@@ -339,7 +339,7 @@ module.exports = class ResourceController {
         try {
           let resourceId = request.params.resource;
           let resource = request.body.resource ? JSON.parse(request.body.resource) : {};
-          
+
           // console.log(resource);
 
           request.files.forEach(file => {
@@ -358,17 +358,17 @@ module.exports = class ResourceController {
           });
 
           let data = await this.service.update(resourceId, resource);
-    
+
           return h.response({ message: 'Done', [this.type]: data.resource }, 200);
         } catch (error) {
-          return h.response({error: error.message}, 500);
+          return h.response({ error: error.message }, 500);
         }
       },
       tags: ['api']
     };
   }
-  
-  updatePropWithFile () {
+
+  updatePropWithFile() {
     return {
       description: 'Remove the ' + this.type,
       auth: this.auth.updatePropWithFile || 'jwt',
@@ -384,34 +384,34 @@ module.exports = class ResourceController {
           let resourceId = request.params.resource;
           let resourceFile = request.files.find(f => f.fieldname == request.params.prop);
 
-          let data = await this.service.update(resourceId, {[request.params.prop]: resourceFile.location});
-    
+          let data = await this.service.update(resourceId, { [request.params.prop]: resourceFile.location });
+
           return h.response({ message: 'Done', [this.type]: data.resource }, 200);
         } catch (error) {
-          return h.response({error: error.message}, 500);
+          return h.response({ error: error.message }, 500);
         }
       },
       tags: ['api']
     };
   }
-  
-  remove () {
+
+  remove() {
     return {
       description: 'Remove the ' + this.type,
       auth: this.auth.remove || 'jwt',
       handler: async (request, h) => {
         try {
           let result = await this.service.remove(request.query.id);
-          return h.response({ message: result.message}, result.statusCode);
+          return h.response({ message: result.message }, result.statusCode);
         } catch (error) {
-          return h.response({error: error.message}, 500);
+          return h.response({ error: error.message }, 500);
         }
       },
       tags: ['api']
     };
-  } 
+  }
 
-  removeMany () {
+  removeMany() {
     return {
       description: 'Remove the ' + this.type,
       auth: this.auth.removeMany || 'jwt',
@@ -419,10 +419,10 @@ module.exports = class ResourceController {
         try {
           return await this.service.removeMany(request.query.ids);
         } catch (error) {
-          return h.response({error: error.message}, 500);
+          return h.response({ error: error.message }, 500);
         }
       },
       tags: ['api']
     };
-  } 
+  }
 };

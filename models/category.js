@@ -8,13 +8,14 @@ module.exports = {
   model: {
     name: 'Category',
     attributes: {
-      name: { type: String },
-      type: { type: String, enum: ['advert', 'document', 'event', 'job', 'training'] }
+      name: { type: String, unique: true },
+      type: { type: String, enum: ['config'] },
+      tags: { type: Array }
     },
     references: []
   },
   hooks: {
-    async preCreate (data, Helper, zeRoute) {
+    async preCreate(data, Helper, zeRoute) {
       return data;
     }
   }
