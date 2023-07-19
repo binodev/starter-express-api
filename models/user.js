@@ -23,8 +23,14 @@ module.exports = {
         ref: 'Comparaison',
         localField: '_id',
         foreignField: 'user',
-      }]],
-      references: ['audits','comparaisons']
+      }],[
+        'conversations', {
+          ref: 'Conversation',
+          localField: '_id',
+          foreignField: 'user',
+        }
+      ]],
+      references: ['audits','comparaisons', 'conversations']
   ,
     auth: {
       register: 'none'

@@ -30,6 +30,7 @@
     "multer-s3": "^2.9.0",
     "multer-s3-transform": "^2.10.3",
     "multer-sharp-s3": "^0.2.5",
+    "natural": "^6.5.0",
     "nodemailer": "^6.7.6",
     "openai": "^3.3.0",
     "pdfjs-dist": "^3.8.162",

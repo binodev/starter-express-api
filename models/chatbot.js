@@ -1,4 +1,6 @@
 const utils = require('../utils');
+const fs = require('fs');
+const natural = require('natural');
 const axios = require('axios');
 const pdfjs = require('pdfjs-dist');
 const cheerio = require('cheerio');
@@ -14,7 +16,11 @@ module.exports = {
       name: 'Chatbot',
       attributes: {
         admin: { ref: 'Admin' },
-        name:'',
+        name:{
+          type: String,
+          required: true,
+          unique: true
+        },
         prompt: {
             type: String,
           },
@@ -98,8 +104,34 @@ module.exports = {
           
                   // Enregistrer les modifications dans la base de données
                   await chatbot.save();
-          
-                  return h.response({ message: 'Texte combiné mis à jour avec succès',data: await chatbot.save(),documents:request.files});
+
+                  /**   // Utilisez Natural pour diviser le texte en phrases
+                  const tokenizer = new natural.SentenceTokenizer();
+                  const sentences = tokenizer.tokenize(chatbot.combinedText);
+
+                  // Créez un tableau pour stocker les paires prompt-complétion
+                  const promptCompletionPairs = [];
+
+                  // Parcourez les phrases pour générer les paires prompt-complétion
+                  sentences.forEach((sentence) => {
+                    // Définissez la phrase comme le prompt
+                    const prompt = sentence.trim();
+
+                    // Définissez une chaîne vide comme la complétion initiale
+                    let completion = '';
+
+                    // Ajoutez la paire prompt-complétion au tableau
+                    promptCompletionPairs.push({ prompt, completion });
+                  });
+
+                  // Convertissez le tableau en une chaîne JSONL
+                  const jsonlContent = promptCompletionPairs.map((pair) => JSON.stringify(pair)).join('\n');
+
+                  // Écrivez la chaîne JSONL dans un fichier
+                  fs.writeFileSync('output.jsonl', jsonlContent);
+                 */   
+
+                  return h.response({ message: 'Chatbot entraîné avec succès',data: await chatbot.save(),documents:request.files});
                 } catch (error) {
                   console.error(error);
                   return h.response({ error: 'Erreur interne du serveur' }).code(500);
@@ -112,48 +144,137 @@ module.exports = {
          //Fonctionnalite de chatbot
           {
             method: 'POST',
-            path: '/chatbots/{chatbotId}/chat',
+            path: 'list/:name/:userId',
             config: {
-              auth: 'jwt',
+              auth: false,
               description: 'Chat with a specific chatbot',
               handler: async (request, h) => {
                 try {
-                  const { chatbotId } = request.params;
+                  const chatbotName = request.params.name;
+                  const userId = request.params.userId;
                   const { message } = request.body;
               
                   // Rechercher le chatbot à partir de l'ID
                   let ctrlChatbot= await zeRoute.chatbot
-                  const chatbot = await ctrlChatbot.controller.service.Resource.findById(chatbotId);
-                // Gestion de la connexion du client avec Socket.IO
-                // Initialisation de Socket.IO
-                const server = require('http').createServer();
-                const io = socketIO(server);
-                io.on('connection', (socket) => {
-                  console.log('Nouvelle connexion :', socket.id);
+                  const chatbot = await ctrlChatbot.controller.service.Resource.findOne({name:chatbotName});
+
+                   let ctrlConversation = await zeRoute.conversation
+                   const Conversation = await ctrlConversation.controller.service.Resource
+                   let conversation = await ctrlConversation.controller.service.Resource.findOne({user:userId});
+                   
+                
+
+                   if (!conversation) {
+                    // Si la conversation n'existe pas, créer une nouvelle conversation
+                    conversation = new Conversation({
+                      user: userId,
+                      history: [],
+                    });
+                  
+                    await conversation.save();
+                  }
         
-                  // Gestion des messages de chat
-                  socket.on('chat-message', async (data) => {
-                    try {
-                      // Appel à la fonction de traitement de chat pour obtenir une réponse
-                      const reply = await handleChatRequest(data.message, chatbot);
-        
-                      // Envoyer la réponse du chatbot au client via Socket.IO
-                      socket.emit('chat-reply', reply);
-                    } catch (error) {
-                      console.error(error);
-                      socket.emit('chat-error', 'Une erreur s\'est produite lors du traitement de votre demande.');
-                    }
-                  });
+                  
+                // Configuration et initialisation de l'API OpenAI
+                const configuration = new Configuration({
+                  apiKey: process.env.OPENAI_API_KEY,
                 });
-                    // Retourner une réponse vide, car la réponse du chatbot sera envoyée via Socket.IO
-                  return '';
+                const openai = new OpenAIApi(configuration);
+
+                 // Mettre à jour le message système avec le combinedText du chatbot
+                  const systemMessage = { role: 'system', content: chatbot.combinedText };
+
+                  // Construire l'historique des messages pour la demande d'achèvement du chat
+                  const chatHistory = conversation.history.map(message => ({
+                    role: message.role,
+                    content: message.content,
+                  }));
+
+                  // Construire l'historique des messages pour la demande d'achèvement du chat
+                  const messages = [
+                    systemMessage,
+                    ...chatHistory,
+                    { role: 'user', content: message },
+                  ];
+           
+                // Appel à l'API OpenAI pour obtenir une réponse du chatbot
+                const completion = await openai.createChatCompletion({
+                  model: "gpt-3.5-turbo",
+                  temperature: 0.5,
+                  messages: messages,
+                  user:userId
+                });
+                        // Ajouter un nouveau message à la conversation
+                        conversation.history.push({
+                          role: 'user',
+                          content: message,
+                        });
+        
+                const assistantMessage = completion.data.choices[0].message;
+
+                conversation.history.push(assistantMessage);
+        
+                // Enregistrer la conversation mise à jour
+                await conversation.save();
+                // Retourner le message de l'assistant
+                return h.response({message: assistantMessage});
                 } catch (error) {
                   console.error(error);
-                  return { error: 'Erreur interne du serveur' };
+                  return { role: 'assistant', content: 'Une erreur s\'est produite lors du traitement de votre demande.' };
                 }
               },
               tags: ['api'],
             },
+          },
+          //get a  user  chat history
+          {
+            method: 'GET',
+            path: 'history/:userId',
+            config: {
+              auth: false,
+              description: 'Get a user chat history',
+              handler: async (request, h) => {
+              const userId = request.params.userId;
+              let ctrlConversation = await zeRoute.conversation
+              const Conversation = await ctrlConversation.controller.service.Resource
+
+              let conversation = await ctrlConversation.controller.service.Resource.findOne({user:userId});
+              if (!conversation) {
+                // Si la conversation n'existe pas, créer une nouvelle conversation
+                conversation = new Conversation({
+                  user: userId,
+                  history: [],
+                });
+                await conversation.save();
+              }
+              return h.response(conversation.history.map(message => ({
+                role: message.role,
+                content: message.content,
+              })));
+              },
+              tags: ['api'],
+            }
+          },
+          //delete user history
+          {
+            method: 'DELETE',
+            path: 'history/:userId',
+            config: {
+              auth: false,
+              description: 'Delete a user chat history',
+              handler: async (request, h) => {
+                const userId = request.params.userId;
+                let ctrlConversation = await zeRoute.conversation
+                const Conversation = await ctrlConversation.controller.service.Resource
+                let conversation = await ctrlConversation.controller.service.Resource.findOne({user:userId});
+                if (conversation) {
+                  conversation.history = [];
+                  await conversation.save();
+                }
+                return h.response({ message: 'Chat history deleted' });
+              },
+              tags: ['api'],
+            }
           }
 
         ]
@@ -229,44 +350,3 @@ function postProcessText(text){
   return text.replace(/\n/g, '').replace(/\s+/g, ' ');
 }
 
-
-// Définition de la fonction de traitement de chat
-
-// Configuration et initialisation de l'API OpenAI
-const configuration = new Configuration({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-const openai = new OpenAIApi(configuration);
-async function handleChatRequest(message, chatbot) {
-  try {
-      // Mettre à jour le message système avec le combinedText du chatbot
-      const systemMessage = { role: 'system', content: chatbot.combinedText };
-
-      // Construire l'historique des messages pour la demande d'achèvement du chat
-      const messages = [
-        systemMessage,
-        ...chatbot.chatHistory,
-        { role: 'user', content: message },
-      ];
-  
-    // Appel à l'API OpenAI pour obtenir une réponse du chatbot
-    const completion = await openai.createChatCompletion({
-      model: "gpt-3.5-turbo",
-      messages: messages,
-    });
-
-    const assistantMessage = completion.data.choices[0].message;
-
-    // Ajouter le message de l'assistant à l'historique des messages
-    chatbot.chatHistory.push(assistantMessage);
-
-    // Enregistrer les modifications dans la base de données (si nécessaire)
-
-
-    // Retourner le message de l'assistant
-    return assistantMessage;
-  } catch (error) {
-    console.error(error);
-    return { role: 'assistant', content: 'Une erreur s\'est produite lors du traitement de votre demande.' };
-  }
-}
