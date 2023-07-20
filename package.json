@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "NODE_ENV=development PORT=7700 nodemon api/index.js --watch api --watch models --watch utils --watch locales",
-    "start": "NODE_ENV=production node api/index.js"
+    "start": "NODE_ENV=production node api/index.js",
+    "postinstall": "npm install dotenv"
   },
   "dependencies": {
     "aws-sdk": "^2.839.0",
