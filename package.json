@@ -4,8 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "NODE_ENV=development PORT=7700 nodemon api/index.js --watch api --watch models --watch utils --watch locales",
-    "start": "NODE_ENV=production node api/index.js",
-    "preinstall": "npm install"
+    "start": "NODE_ENV=production node api/index.js"
   },
   "dependencies": {
     "aws-sdk": "^2.839.0",
@@ -14,7 +13,7 @@
     "cheerio": "^1.0.0-rc.12",
     "cors": "^2.8.5",
     "crypto": "^1.0.1",
-    "dotenv": "^8.2.0",
+    "dotenv": "^8.6.0",
     "exceljs": "^4.2.1",
     "express": "^4.17.1",
     "express-jwt": "^6.0.0",
